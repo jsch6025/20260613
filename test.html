@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obsidian Community Style Mindmap</title>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-lib@0.16.0/dist/browser/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-view@0.16.0/dist/browser/index.js"></script>
+
+    <style>
+        /* 기본 테마 및 레이아웃 설정 (Obsidian 다크모드 감성) */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #dcddde;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: #2f3136;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #202225;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            color: #9b5de5;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background-color: #4f545c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #7289da;
+        }
+
+        /* 메인 컨텐츠 영역 분할 (5:5 슬라이드) */
+        .container {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 45px);
+        }
+
+        .pane {
+            flex: 1;
+            height: 100%;
+            position: relative;
+        }
+
+        /* 에디터 스타일 */
+        #editor-container {
+            border-right: 1px solid #202225;
+            background-color: #2f3136;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            background-color: #2f3136;
+            color: #e2e8f0;
+            border: none;
+            padding: 20px;
+            font-family: "Fira Code", Consolas, Monaco, monospace;
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+        }
+
+        /* 마인드맵 뷰어 스타일 */
+        #viewer-container {
+            background-color: #1e1e1e;
+        }
+
+        svg#mindmap {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Markmap 내부 텍스트 색상 커스텀 */
+        .markmap-node text {
+            fill: #dcddde !important;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>🗺️ Obsidian 스타일 라이브 마인드맵</h1>
+        <div class="btn-container">
+            <button onclick="resetTemplate()">초기화</button>
+            <button onclick="downloadMarkdown()">Markdown 다운로드</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="pane id=" editor-container">
+            <textarea id="editor" placeholder="이곳에 마크다운을 입력하세요..."></textarea>
+        </div>
+        <div class="pane" id="viewer-container">
+            <svg id="mindmap"></svg>
+        </div>
+    </div>
+
+    <script>
+        // 초기 기본 템플릿 데이터
+        const defaultTemplate = `# 🗺️ 나의 마인드맵\n## 🚀 시작하기\n- 왼쪽 창에 **Markdown** 형식으로 입력하세요.\n- 코드가 실시간으로 오른쪽에 시각화됩니다!\n\n## 🛠️ 작성 문법\n- \`#\` 기호로 핵심 주제를 만듭니다.\n- \`##\`, \`###\` 등으로 하위 가지를 뻗어 나갑니다.\n- \`-\` 이나 \`*\` 로 상세 항목 리스트를 더할 수도 있어요.\n\n## 🎨 조작 방법\n- **마우스 드래그**: 마인드맵 위치 이동\n- **마우스 휠**: 확대 및 축소(Zoom)\n- **노드 클릭**: 하위 가지 접기 / 펴기\n\n## 🔗 Obsidian 커뮤니티\n- 본 도구는 오픈소스 \`Markmap\` 라이브러리를 사용합니다.\n- Obsidian 내부에서도 똑같은 감성으로 활용 가능해요!`;
+
+        const textarea = document.getElementById('editor');
+        textarea.value = defaultTemplate;
+
+        // Markmap 변환기 및 인스턴스 초기화
+        const { Transformer, Markmap } = window.markmap;
+        const transformer = new Transformer();
+        let mmInstance = null;
+
+        function renderMindmap() {
+            const markdownText = textarea.value;
+            // 마크다운을 Markmap 데이터 구조로 변환
+            const { root } = transformer.transform(markdownText);
+
+            if (mmInstance) {
+                // 이미 인스턴스가 있다면 데이터만 업데이트 (끊김 없는 렌더링)
+                mmInstance.setData(root);
+                mmInstance.fit();
+            } else {
+                // 처음 실행 시 인스턴스 생성
+                mmInstance = Markmap.create('#mindmap', null, root);
+            }
+        }
+
+        // 텍스트를 입력할 때마다 실시간으로 마인드맵 갱신
+        textarea.addEventListener('input', renderMindmap);
+
+        // 초기 화면 렌더링
+        window.addEventListener('DOMContentLoaded', () => {
+            renderMindmap();
+            // 첫 로딩 시 마인드맵이 화면 중앙에 예쁘게 맞춰지도록 살짝 딜레이 처리
+            setTimeout(() => mmInstance && mmInstance.fit(), 200);
+        });
+
+        // 기능 함수: 초기화
+        function resetTemplate() {
+            if (confirm("작성 중인 내용이 사라집니다. 초기화하시겠습니까?")) {
+                textarea.value = defaultTemplate;
+                renderMindmap();
+            }
+        }
+
+        // 기능 함수: 마크다운 파일 다운로드
+        function downloadMarkdown() {
+            const content = textarea.value;
+            const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'my-obsidian-mindmap.md';
+            link.click();
+        }
+    </script>
+</body>
+
+</html>
