@@ -58,23 +58,19 @@ button:hover {
     background-color: #7289da;
 }
 
-/* 메인 컨텐츠 영역 분할 (5:5 슬라이드) */
+/* 메인 컨텐츠 영역 분할 */
 .container {
     display: flex;
     flex: 1;
     height: calc(100vh - 45px); /* Header 높이 제외 */
 }
 
-.pane {
-    flex: 1;
-    height: 100%;
-    position: relative;
-}
-
 /* 에디터 스타일 */
 .editor-container {
-    border-right: 1px solid #202225;
     background-color: #2f3136;
+    height: 100%;
+    position: relative;
+    flex-shrink: 0;
 }
 
 textarea {
@@ -91,9 +87,27 @@ textarea {
     outline: none;
 }
 
+/* 사이즈 조절 드래그 바 (Resizer) */
+.resizer {
+    width: 6px;
+    background-color: #202225;
+    cursor: col-resize;
+    flex-shrink: 0;
+    z-index: 10;
+    transition: background-color 0.2s;
+}
+
+.resizer:hover, .resizer:active {
+    background-color: #7289da;
+}
+
 /* 마인드맵 뷰어 스타일 */
 .viewer-container {
     background-color: #1e1e1e;
+    flex: 1;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
 }
 
 svg#mindmap {

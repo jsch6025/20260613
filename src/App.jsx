@@ -26,6 +26,12 @@ const defaultTemplate = `# 🗺️ 나의 마인드맵
 
 function App() {
   const [value, setValue] = useState(defaultTemplate);
+  
+  // UI States
+  const [isEditorOpen, setIsEditorOpen] = useState(true);
+  const [editorWidth, setEditorWidth] = useState(400); // 초기 넓이 400px
+  const isResizing = useRef(false);
+
   const svgRef = useRef(null);
   const markmapRef = useRef(null);
 
@@ -33,17 +39,60 @@ function App() {
   useEffect(() => {
     if (!svgRef.current) return;
 
-    // 초기 렌더링 시 인스턴스 생성
     if (!markmapRef.current) {
       markmapRef.current = Markmap.create(svgRef.current);
     }
 
-    // 마크다운 변환 및 업데이트
     const { root } = transformer.transform(value);
     markmapRef.current.setData(root);
     markmapRef.current.fit();
 
   }, [value]);
+
+  // 창 크기 조절 (Resizer) 로직
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizing.current) return;
+      // 화면 분할 비율에 따라 최소 200px, 최대 800px 제한
+      let newWidth = e.clientX;
+      if (newWidth < 200) newWidth = 200;
+      if (newWidth > 800) newWidth = 800;
+      setEditorWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      if (isResizing.current) {
+        isResizing.current = false;
+        document.body.style.cursor = 'default';
+        // 드래그가 끝난 후 SVG 위치 재조정
+        setTimeout(() => {
+          if (markmapRef.current) markmapRef.current.fit();
+        }, 50);
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    isResizing.current = true;
+    document.body.style.cursor = 'col-resize';
+  };
+
+  const toggleEditor = () => {
+    setIsEditorOpen((prev) => !prev);
+    // 에디터 열림/닫힘 후 SVG 크기 재계산
+    setTimeout(() => {
+      if (markmapRef.current) markmapRef.current.fit();
+    }, 100);
+  };
 
   const handleReset = () => {
     if (window.confirm("작성 중인 내용이 사라집니다. 초기화하시겠습니까?")) {
@@ -64,20 +113,32 @@ function App() {
       <header>
         <h1>🗺️ Obsidian 스타일 라이브 마인드맵</h1>
         <div className="btn-container">
+          <button onClick={toggleEditor}>
+            {isEditorOpen ? "📝 에디터 닫기" : "📝 에디터 열기"}
+          </button>
           <button onClick={handleReset}>초기화</button>
           <button onClick={handleDownload}>Markdown 다운로드</button>
         </div>
       </header>
 
       <div className="container">
-        <div className="pane editor-container">
-          <textarea
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder="이곳에 마크다운을 입력하세요..."
-          />
-        </div>
-        <div className="pane viewer-container">
+        {isEditorOpen && (
+          <>
+            <div className="editor-container" style={{ width: editorWidth }}>
+              <textarea
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder="이곳에 마크다운을 입력하세요..."
+              />
+            </div>
+            <div 
+              className="resizer" 
+              onMouseDown={handleMouseDown}
+              title="크기 조절"
+            />
+          </>
+        )}
+        <div className="viewer-container">
           <svg ref={svgRef} id="mindmap"></svg>
         </div>
       </div>
