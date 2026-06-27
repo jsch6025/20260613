@@ -4,6 +4,7 @@ import './Portal.css';
 
 function App() {
   const [currentView, setCurrentView] = useState('portal');
+  const [isTermsOpen, setIsTermsOpen] = useState(false);
 
   if (currentView === 'mindmap') {
     return (
@@ -67,6 +68,24 @@ function App() {
           </div>
         ))}
       </div>
+
+      <footer className="portal-footer">
+        <button className="footer-link" onClick={() => setIsTermsOpen(true)}>이용약관</button>
+      </footer>
+
+      {isTermsOpen && (
+        <div className="modal-overlay" onClick={() => setIsTermsOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>이용약관</h2>
+              <button className="modal-close" onClick={() => setIsTermsOpen(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              {/* 이용약관 내용이 들어갈 자리입니다 (현재는 제목만) */}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
